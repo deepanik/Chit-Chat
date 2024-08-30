@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chit Chat</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="chat-container">
+        <div id="header">
+            <h2>Chit Chat</h2>
+            <span>Ayyy!! Baigan 🍆</span>
+        </div>
+        <div id="messages-container">
+            <section id="messages">
+                <!-- Messages will be inserted here -->
+            </section>
+        </div>
+        <form id="message-form">
+            <input type="text" id="message-input" placeholder="Type a message" aria-label="Message input">
+            <button id="send-button" aria-label="Send message">Send</button>
+            <button id="clear-button" aria-label="Clear chat">Clear</button>
+        </form>
+        <p class="author-name">Developed by Ramdi Don!!</p>
+    </div>
+
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="./app.js"></script>
+    <script>
+        // Initialize Firebase Realtime Database
+        const db = firebase.database();
+
+        // Get the message form, send button, and clear button
+        const messageForm = document.getElementById('message-form');
+        const sendButton = document.getElementById('send-button');
+        const clearButton = document.getElementById('clear-button');
+        const messagesContainer = document.getElementById('messages-container');
+
+        // Add an event listener to the send button to prevent page refresh
+        sendButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    // Get the message input value
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
+
+    // Check if the message is not empty
+    if (message !== '') {
+        // Send the message to Firebase Realtime Database
+        db.ref('messages').push({
+            message: message,
+            timestamp: Date.now()
+        });
+
+        // Clear the message input field
+        messageInput.value = '';
+    }
+});
+
+        // Add an event listener to the clear button to clear the chat
+        clearButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Remove all messages from Firebase Realtime Database
+            db.ref('messages').remove();
+            // Clear the messages container
+            messagesContainer.innerHTML = '';
+        });
+    </script>
+</body>
+</html>
