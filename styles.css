@@ -123,3 +123,20 @@ body {
 #clear-button:hover {
     background-color: #aaa;
 }
+
+.social-media {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.social-media a {
+    text-decoration: none;
+    color: #333;
+    font-size: 24px;
+    margin-right: 10px;
+}
+
+.social-media a:hover {
+    color: #007bff;
+}
