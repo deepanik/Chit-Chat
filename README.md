@@ -1,8 +1,12 @@
+Link: https://chitchats.live/
+
 Features:
 
 Private Chat: Allows students to communicate securely during exams for collaborative learning or academic assistance.
-Code Generation (SortX AI): Integrates SortX AI services to enable students to generate code and ask questions to enhance their technical knowledge.
-File Sharing (EncryptShare): Facilitates secure file sharing among students using EncryptShare's private code feature. Students can upload files, generate private codes to share, and directly access files using encryption codes through EncryptShare's website.
+
+
+Github LOGO: Code Generation (SortX AI): Integrates SortX AI services to enable students to generate code and ask questions to enhance their technical knowledge.
+Linkdin LOGO: File Sharing (EncryptShare): Facilitates secure file sharing among students using EncryptShare's private code feature. Students can upload files, generate private codes to share, and directly access files using encryption codes through EncryptShare's website.
 Benefits:
 
 Provides a secure and confidential platform for student collaboration.
