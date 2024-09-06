@@ -1,5 +1,4 @@
 // Initialize Firebase
-// Initialize Firebase
 import dotenv from 'dotenv';
 dotenv.config();
 
