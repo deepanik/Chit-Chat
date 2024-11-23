@@ -1,7 +1,8 @@
-// Initialize Firebase
+// Import and configure dotenv
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Firebase configuration using environment variables
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -12,95 +13,48 @@ const firebaseConfig = {
   appId: process.env.FIREBASE_APP_ID,
 };
 
-// const firebaseConfig = {
-//   apiKey: "AIzaSyAvcovuNoRZmVPs7Ms9bNbqqzDoSrRYO80",
-//   authDomain: "chitchat-1199e.firebaseapp.com",
-//   projectId: "chitchat-1199e",
-//   storageBucket: "chitchat-1199e.firebasestorage.app",
-//   messagingSenderId: "26054136546",
-//   appId: "1:26054136546:web:e376c20f53ebe4dcc244bb",
-//   measurementId: "G-JCV9XXHG2X"
-// };
-
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
 // Get a reference to the database
-var database = firebase.database();
+const database = firebase.database();
 
 // Get a reference to the messages section
-var messagesRef = database.ref('messages');
+const messagesRef = database.ref('messages');
 
 // Retrieve existing messages when the page loads
-messagesRef.on('value', function(data) {
-    var messages = data.val();
-    var messageHTML = '';
-    Object.keys(messages).forEach(function(key) {
-        messageHTML += '<p>' + messages[key].text + '</p>';
+messagesRef.on('value', (snapshot) => {
+  const messages = snapshot.val();
+  let messageHTML = '';
+  if (messages) {
+    Object.keys(messages).forEach((key) => {
+      messageHTML += `<p>${messages[key].text}</p>`;
     });
-    document.getElementById('messages').innerHTML = messageHTML;
+  }
+  document.getElementById('messages').innerHTML = messageHTML;
 });
 
 // Listen for new messages
-messagesRef.on('child_added', function(data) {
-    var message = data.val();
-    var messageHTML = '<p>' + message.text + '</p>';
-    document.getElementById('messages').innerHTML += messageHTML;
+messagesRef.on('child_added', (snapshot) => {
+  const message = snapshot.val();
+  const messageHTML = `<p>${message.text}</p>`;
+  document.getElementById('messages').innerHTML += messageHTML;
 });
 
 // Send message function
 function sendMessage() {
-    var messageInput = document.getElementById('message-input');
-    var messageText = messageInput.value;
+  const messageInput = document.getElementById('message-input');
+  const messageText = messageInput.value.trim();
 
+  if (messageText) {
     // Save the message to the database
     messagesRef.push({
-        text: messageText
+      text: messageText,
     });
 
     // Clear the input field
     messageInput.value = '';
-}
-
-// Add event listener to the send button
-document.getElementById('send-button').addEventListener('click', sendMessage);
-
-firebase.initializeApp(firebaseConfig);
-
-// Get a reference to the database
-var database = firebase.database();
-
-// Get a reference to the messages section
-var messagesRef = database.ref('messages');
-
-// Retrieve existing messages when the page loads
-messagesRef.on('value', function(data) {
-    var messages = data.val();
-    var messageHTML = '';
-    Object.keys(messages).forEach(function(key) {
-        messageHTML += '<p>' + messages[key].text + '</p>';
-    });
-    document.getElementById('messages').innerHTML = messageHTML;
-});
-
-// Listen for new messages
-messagesRef.on('child_added', function(data) {
-    var message = data.val();
-    var messageHTML = '<p>' + message.text + '</p>';
-    document.getElementById('messages').innerHTML += messageHTML;
-});
-
-// Send message function
-function sendMessage() {
-    var messageInput = document.getElementById('message-input');
-    var messageText = messageInput.value;
-
-    // Save the message to the database
-    messagesRef.push({
-        text: messageText
-    });
-
-    // Clear the input field
-    messageInput.value = '';
+  }
 }
 
 // Add event listener to the send button
