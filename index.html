@@ -41,44 +41,5 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
     <script src="./app.js"></script>
-    <script>
-        // Initialize Firebase Realtime Database
-        const db = firebase.database();
-
-        // Get the message form, send button, and clear button
-        const messageForm = document.getElementById('message-form');
-        const sendButton = document.getElementById('send-button');
-        const clearButton = document.getElementById('clear-button');
-        const messagesContainer = document.getElementById('messages-container');
-
-        // Add an event listener to the send button to prevent page refresh
-        sendButton.addEventListener('click', (e) => {
-    e.preventDefault();
-    // Get the message input value
-    const messageInput = document.getElementById('message-input');
-    const message = messageInput.value.trim();
-
-    // Check if the message is not empty
-    if (message !== '') {
-        // Send the message to Firebase Realtime Database
-        db.ref('messages').push({
-            message: message,
-            timestamp: Date.now()
-        });
-
-        // Clear the message input field
-        messageInput.value = '';
-    }
-});
-
-        // Add an event listener to the clear button to clear the chat
-        clearButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            // Remove all messages from Firebase Realtime Database
-            db.ref('messages').remove();
-            // Clear the messages container
-            messagesContainer.innerHTML = '';
-        });
-    </script>
 </body>
 </html>
