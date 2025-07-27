@@ -13,7 +13,6 @@ firebase.initializeApp(firebaseConfig);
 
 const database = firebase.database();
 const messagesRef = database.ref('messages');
-const filesRef = database.ref('files');
 
 // Function to scroll to bottom of messages
 function scrollToBottom() {
@@ -21,10 +20,108 @@ function scrollToBottom() {
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// Function to scroll to bottom of files list
-function scrollFilesToBottom() {
-  const filesListSection = document.getElementById('files-list-section');
-  filesListSection.scrollTop = filesListSection.scrollHeight;
+// Function to detect if a message contains a download link
+function isDownloadLink(text) {
+  const urlPattern = /https?:\/\/[^\s]+/g;
+  
+  // Exclude specific domain
+  const excludedDomain = /exam\.testpad\.chitkarauniversity\.edu\.in/;
+  
+  // Download patterns for any domain
+  const downloadPatterns = [
+    // File extensions
+    /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|7z|mp3|mp4|avi|mov|jpg|jpeg|png|gif|txt|csv|iso|exe|msi|deb|rpm|apk|ipa|dmg|pkg)$/i,
+    
+    // Common download keywords in URL
+    /download|file|attachment|get|fetch|retrieve/i,
+    
+    // Cloud storage patterns
+    /drive\.google\.com\/uc\?export=download/,
+    /dropbox\.com\/s\//,
+    /mega\.nz\//,
+    /mediafire\.com\//,
+    /wetransfer\.com\//,
+    /pcloud\.com\//,
+    /box\.com\//,
+    /onedrive\.live\.com\//,
+    /sharepoint\.com\//,
+    /amazonaws\.com\//,
+    /github\.com\/.*\/releases/,
+    
+    // Shortened URL services (common ones)
+    /bit\.ly|tinyurl\.com|goo\.gl|t\.co|is\.gd|v\.gd|ow\.ly|su\.pr|twurl\.nl|snipurl\.com|short\.to|BudURL\.com|ping\.fm|tr\.im|zip\.my|metamark\.net|sn\.im|shorturl\.at|rb\.gy|short\.io|cutt\.ly|adf\.ly|sh\.st|tiny\.cc|short\.ly|shorturl\.com|shorten\.as|shorturl\.co|shorturl\.me|shorturl\.net|shorturl\.org|shorturl\.to|shorturl\.tv|shorturl\.us|shorturl\.ws|shorturl\.xyz/i
+  ];
+  
+  const urls = text.match(urlPattern);
+  if (!urls) return false;
+  
+  return urls.some(url => {
+    // Skip excluded domain
+    if (excludedDomain.test(url)) return false;
+    
+    // Check if it matches any download pattern
+    return downloadPatterns.some(pattern => pattern.test(url));
+  });
+}
+
+// Function to extract filename from URL
+function extractFilename(url) {
+  try {
+    const urlObj = new URL(url);
+    let filename = urlObj.pathname.split('/').pop();
+    
+    // If no filename in path, try to get from query params
+    if (!filename || filename === '') {
+      const params = new URLSearchParams(urlObj.search);
+      filename = params.get('id') || params.get('file') || 'download';
+    }
+    
+    // Clean up filename
+    filename = filename.replace(/[?#].*$/, ''); // Remove query and fragment
+    if (!filename.includes('.')) {
+      filename += '.file';
+    }
+    
+    return filename || 'download';
+  } catch (error) {
+    return 'download';
+  }
+}
+
+// Function to expand shortened URLs
+async function expandShortUrl(shortUrl) {
+  try {
+    const response = await fetch(shortUrl, { 
+      method: 'HEAD',
+      redirect: 'follow'
+    });
+    return response.url;
+  } catch (error) {
+    console.log('Could not expand URL:', error);
+    return shortUrl; // Return original if expansion fails
+  }
+}
+
+// Function to create message HTML with download link detection
+function createMessageHTML(messageText) {
+  if (isDownloadLink(messageText)) {
+    const urlMatch = messageText.match(/https?:\/\/[^\s]+/g);
+    if (urlMatch) {
+      const url = urlMatch[0];
+      const filename = extractFilename(url);
+      
+      return `
+        <div class="message">
+          <div>${messageText.replace(url, '')}</div>
+          <button class="download-link" onclick="downloadFile('${url}', '${filename}')">
+            📥 Download ${filename}
+          </button>
+        </div>
+      `;
+    }
+  }
+  
+  return `<p>${messageText}</p>`;
 }
 
 // Retrieve existing messages when the page loads
@@ -33,7 +130,9 @@ messagesRef.on('value', (snapshot) => {
   let messageHTML = '';
   if (messages) {
     Object.keys(messages).forEach((key) => {
-      messageHTML += `<p>${messages[key].text || messages[key].message}</p>`;
+      const message = messages[key];
+      const text = message.text || message.message;
+      messageHTML += createMessageHTML(text);
     });
   }
   document.getElementById('messages').innerHTML = messageHTML;
@@ -44,7 +143,8 @@ messagesRef.on('value', (snapshot) => {
 // Listen for new messages
 messagesRef.on('child_added', (snapshot) => {
   const message = snapshot.val();
-  const messageHTML = `<p>${message.text || message.message}</p>`;
+  const text = message.text || message.message;
+  const messageHTML = createMessageHTML(text);
   document.getElementById('messages').innerHTML += messageHTML;
   // Scroll to bottom when new message is added
   setTimeout(scrollToBottom, 100);
@@ -65,95 +165,25 @@ function sendMessage(e) {
   }
 }
 
-// Add file function
-function addFile(e) {
-  e.preventDefault();
-  const fileLinkInput = document.getElementById('file-link');
-  const fileNameInput = document.getElementById('file-name');
-  
-  const fileLink = fileLinkInput.value.trim();
-  const fileName = fileNameInput.value.trim();
-
-  if (fileLink && fileName) {
-    filesRef.push({
-      link: fileLink,
-      name: fileName,
-      timestamp: Date.now()
-    });
-    
-    // Clear inputs
-    fileLinkInput.value = '';
-    fileNameInput.value = '';
-  } else {
-    alert('Please enter both file link and file name!');
-  }
-}
-
-// Function to shorten URL for display
-function shortenUrl(url) {
-  try {
-    const urlObj = new URL(url);
-    let domain = urlObj.hostname;
-    let path = urlObj.pathname;
-    
-    // Remove www. if present
-    if (domain.startsWith('www.')) {
-      domain = domain.substring(4);
-    }
-    
-    // Shorten path if too long
-    if (path.length > 30) {
-      path = path.substring(0, 30) + '...';
-    }
-    
-    return `${domain}${path}`;
-  } catch (error) {
-    // If URL parsing fails, return a shortened version
-    if (url.length > 40) {
-      return url.substring(0, 40) + '...';
-    }
-    return url;
-  }
-}
-
-// Display files function
-function displayFiles(files) {
-  const filesList = document.getElementById('files-list');
-  let filesHTML = '';
-  
-  if (files) {
-    Object.keys(files).forEach((key) => {
-      const file = files[key];
-      const shortUrl = shortenUrl(file.link);
-      filesHTML += `
-        <div class="file-item">
-          <div class="file-info">
-            <div class="file-name">${file.name}</div>
-            <div class="file-link" title="${file.link}">${shortUrl}</div>
-          </div>
-          <button class="download-button" onclick="downloadFile('${file.link}', '${file.name}')">
-            Download
-          </button>
-        </div>
-      `;
-    });
-  }
-  
-  filesList.innerHTML = filesHTML;
-}
-
 // Download file function
-function downloadFile(link, fileName) {
+async function downloadFile(link, fileName) {
   try {
     // Show loading state
     const downloadButton = event.target;
     const originalText = downloadButton.textContent;
-    downloadButton.textContent = 'Downloading...';
+    downloadButton.textContent = '⏳ Downloading...';
     downloadButton.disabled = true;
+    
+    // Expand shortened URL if needed
+    let finalUrl = link;
+    if (isShortenedUrl(link)) {
+      downloadButton.textContent = '⏳ Expanding URL...';
+      finalUrl = await expandShortUrl(link);
+    }
     
     // Create a temporary anchor element to trigger download
     const downloadLink = document.createElement('a');
-    downloadLink.href = link;
+    downloadLink.href = finalUrl;
     downloadLink.download = fileName;
     downloadLink.style.display = 'none';
     
@@ -175,25 +205,22 @@ function downloadFile(link, fileName) {
   }
 }
 
-// Retrieve and display existing files
-filesRef.on('value', (snapshot) => {
-  const files = snapshot.val();
-  displayFiles(files);
-  // Scroll to bottom after loading files
-  setTimeout(scrollFilesToBottom, 100);
-});
-
-// Listen for new files
-filesRef.on('child_added', (snapshot) => {
-  const files = snapshot.val();
-  displayFiles(files);
-  // Scroll to bottom when new file is added
-  setTimeout(scrollFilesToBottom, 100);
-});
+// Function to check if URL is shortened
+function isShortenedUrl(url) {
+  const shortenedPatterns = [
+    /bit\.ly|tinyurl\.com|goo\.gl|t\.co|is\.gd|v\.gd|ow\.ly|su\.pr|twurl\.nl|snipurl\.com|short\.to|BudURL\.com|ping\.fm|tr\.im|zip\.my|metamark\.net|sn\.im|shorturl\.at|rb\.gy|short\.io|cutt\.ly|adf\.ly|sh\.st|tiny\.cc|short\.ly|shorturl\.com|shorten\.as|shorturl\.co|shorturl\.me|shorturl\.net|shorturl\.org|shorturl\.to|shorturl\.tv|shorturl\.us|shorturl\.ws|shorturl\.xyz/i
+  ];
+  
+  return shortenedPatterns.some(pattern => pattern.test(url));
+}
 
 // Event listeners
 document.getElementById('send-button').addEventListener('click', sendMessage);
-document.getElementById('add-file-button').addEventListener('click', addFile);
+document.getElementById('message-input').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    sendMessage(e);
+  }
+});
 
 // Clear chat function
 document.getElementById('clear-button').addEventListener('click', () => {
