@@ -223,8 +223,8 @@ document.getElementById('message-input').addEventListener('keypress', (e) => {
 });
 
 // Clear chat function
-document.getElementById('clear-button').addEventListener('click', () => {
-  if (confirm('Are you sure you want to clear all messages?')) {
-    messagesRef.remove();
-  }
-});
+// document.getElementById('clear-button').addEventListener('click', () => {
+//   if (confirm('Are you sure you want to clear all messages?')) {
+//     messagesRef.remove();
+//   }
+// });
